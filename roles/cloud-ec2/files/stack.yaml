@@ -20,6 +20,9 @@ Parameters:
     Type: String
   SshPort:
     Type: String
+  SpotMaxPrice:
+    Type: String
+    Default: 0.010
 Conditions:
   AllocateNewEIP: !Equals [!Ref UseThisElasticIP, '']
   AssociateExistingEIP: !Not [!Equals [!Ref UseThisElasticIP, '']]
@@ -152,6 +155,7 @@ Resources:
       - SubnetIPv6
       - Subnet
       - InstanceSecurityGroup
+      - EC2LaunchTemplate
     Properties:
       InstanceType:
         Ref: InstanceTypeParameter
@@ -164,14 +168,29 @@ Resources:
       InstanceInitiatedShutdownBehavior: terminate
       SecurityGroupIds:
         - Ref: InstanceSecurityGroup
-      ImageId:
-        Ref: ImageIdParameter
+      LaunchTemplate:
+        LaunchTemplateId:
+          Ref: EC2LaunchTemplate
+        Version: 1
       SubnetId: !Ref Subnet
       Ipv6AddressCount: 1
       UserData: !Ref UserData
       Tags:
         - Key: Name
           Value: !Ref AWS::StackName
+
+  EC2LaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateData:
+        ImageId:
+          Ref: ImageIdParameter
+        InstanceMarketOptions:
+          MarketType: spot
+          SpotOptions:
+            MaxPrice: !Ref SpotMaxPrice
+        InstanceType:
+          Ref: InstanceTypeParameter
 
   ElasticIP:
     Type: AWS::EC2::EIP
